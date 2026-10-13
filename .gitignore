@@ -1,0 +1,57 @@
+# Virtual environments
+.venv/
+*/.venv/
+venv/
+*/venv/
+env/
+*/env/
+
+# Python cache & build
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*/signalchain_q.egg-info/
+dist/
+build/
+.pytest_cache/
+*/.pytest_cache/
+
+# Node / Next.js
+node_modules/
+*/node_modules/
+*/*node_modules/
+.next/
+*/.next/
+*/*/.next/
+out/
+*/out/
+
+# PhysioNet Data & Large Waveforms (Rule 13: Never commit PhysioNet waveform data)
+data/
+*/data/
+*/*data/
+*.dat
+*.hea
+*.atr
+*.xqa
+*.qrs
+
+# Benchmark run results & figures
+results/
+*/results/
+*/*results/
+
+# Environment files & secrets
+.env
+.env.local
+*.env
+
+# System / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

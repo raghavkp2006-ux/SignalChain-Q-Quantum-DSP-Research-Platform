@@ -1,0 +1,56 @@
+project_seed: 1448
+
+ecg:
+  channel_index: 0
+  default_sampling_rate_hz: 360.0
+
+segmentation:
+  segment_length: 256
+  hop_length: 128
+  window: hann
+
+classical:
+  butterworth:
+    order: 4
+    lowcut_hz: 0.5
+    highcut_hz: 40.0
+    zero_phase: true
+    implementation: second_order_sections
+
+  wavelet:
+    family: db6
+    mode: soft
+    max_level: 5
+    mad_scale: 0.6745
+    noise_sigma_estimator: MAD
+    threshold: universal
+
+adaptive_threshold:
+  activity_statistic: mean_absolute_deviation_from_median
+  lowcut_hz: 0.5
+  highcut_min_hz: 25.0
+  highcut_max_hz: 45.0
+  lower_percentile: 10
+  upper_percentile: 90
+
+quantum:
+  simulator: aer_statevector
+  encoding: amplitude
+  oracle: diagonal_reference
+  amplitude_amplification: paper_grover
+  grover_iteration_mode: estimated_capped
+  grover_iteration_cap: 3
+  transpile_optimization_level: 3
+
+benchmark:
+  noise_types:
+    - bw
+    - ma
+    - em
+  snr_db:
+    - -6
+    - 0
+    - 6
+    - 12
+    - 18
+    - 24
