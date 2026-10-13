@@ -3,7 +3,6 @@ import time
 from typing import Any, Dict, Optional
 import numpy as np
 
-from qsp.classical.registry import get_classical_method
 from qsp.core.metrics import evaluate_signal_metrics
 from qsp.core.timing import StageTimer
 from qsp.core.types import FilterResult
@@ -11,8 +10,6 @@ from qsp.modalities.ecg.morphology import (
     detect_r_peaks_pantompkins,
     evaluate_r_peak_detections,
 )
-from qsp.quantum.pipeline import run_quantum_ecg_pipeline
-
 
 def run_ecg_pipeline(
     signal: np.ndarray,
@@ -36,26 +33,34 @@ def run_ecg_pipeline(
 
     t_start = time.perf_counter()
 
+    seg_len = int(params.get("segment_length", 256))
+    hop_len = int(params.get("hop_length", seg_len // 2))
+
     if method_key == "qft_grover_ecg_adaptive":
+        from qsp.quantum.pipeline import run_quantum_ecg_pipeline
+
         # Quantum pipeline execution
         res = run_quantum_ecg_pipeline(
             ecg=signal,
             fs=fs,
-            segment_length=params.get("segment_length", 256),
-            hop_length=params.get("hop_length", 128),
+            segment_length=seg_len,
+            hop_length=hop_len,
             f_low_hz=params.get("f_low_hz", 0.5),
             f_high_min_hz=params.get("f_high_min_hz", 25.0),
             f_high_max_hz=params.get("f_high_max_hz", 45.0),
             oracle_type=params.get("oracle", "diagonal_reference"),
             grover_iterations_cap=params.get("grover_iteration_cap", 3),
-            fixed_grover_iterations=params.get("fixed_grover_iterations", None),
+            fixed_grover_iterations=params.get("fixed_grover_iterations", params.get("grover_iterations", None)),
             transpile_optimization_level=params.get("transpile_optimization_level", 3),
+            profile_resources=params.get("profile_resources", True),
         )
         processed = res.processed_signal
         q_resources = res.quantum_resources
         timings = res.stage_timings_ms
     else:
         # Classical DSP method execution
+        from qsp.classical.registry import get_classical_method
+
         fn = get_classical_method(method_key)
         # Filter method arguments that match signature
         if method_key == "butterworth_bandpass":
@@ -79,8 +84,8 @@ def run_ecg_pipeline(
             filtered = fn(
                 ecg=signal,
                 fs=fs,
-                segment_length=params.get("segment_length", 256),
-                hop_length=params.get("hop_length", 128),
+                segment_length=seg_len,
+                hop_length=hop_len,
                 f_low_hz=params.get("f_low_hz", 0.5),
                 f_high_min_hz=params.get("f_high_min_hz", 25.0),
                 f_high_max_hz=params.get("f_high_max_hz", 45.0),

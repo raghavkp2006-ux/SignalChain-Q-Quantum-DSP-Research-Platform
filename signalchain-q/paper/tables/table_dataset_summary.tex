@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{Benchmark Datasets and Partition Allocations in SignalChain-Q}
+\label{tab:datasets}
+\begin{tabular}{lccccp{4.2cm}}
+\hline
+\textbf{Dataset} & \textbf{Split} & \textbf{Records} & \textbf{$f_s$ (Hz)} & \textbf{Leads} & \textbf{Role / Noise Conditions} \\
+\hline
+MIT-BIH (mitdb) & Development & 10 & 360 & MLII & Initial pipeline tuning \& verification \\
+MIT-BIH (mitdb) & Validation  & 8  & 360 & MLII & Parameter grid tuning (108 configs, isolated) \\
+MIT-BIH (mitdb) & Test        & 7  & 360 & MLII & Frozen test evaluation (canonical noise: bw, ma, em, wgn, pl50, pl60) \\
+NSTDB (nstdb)   & Benchmark   & 12 & 360 & MLII & Calibrated clinical noise stress records (-6 to +24 dB) \\
+QTDB (qtdb)     & External    & 10 & 250 & Lead I & Cross-sampling-rate morphology preservation \\
+\hline
+\end{tabular}
+\end{table}

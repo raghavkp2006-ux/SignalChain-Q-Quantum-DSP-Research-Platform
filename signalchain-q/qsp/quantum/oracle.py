@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import DiagonalGate
-from qsp.modalities.ecg.preprocessing import get_marked_frequencies_mask
+from qsp.core.frequency_mask import get_marked_frequencies_mask
 
 
 def build_diagonal_oracle(

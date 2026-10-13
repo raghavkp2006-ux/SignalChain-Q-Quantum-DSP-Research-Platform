@@ -1,0 +1,48 @@
+digraph SignalChainQ {
+    rankdir=LR;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+
+    ecg [label="ECG Time Series", fillcolor="#e2e8f0"];
+    framing [label="Windowing & Framing\n(Hann, 50% Overlap)", fillcolor="#e2e8f0"];
+    est [label="Adaptive Energy Estimator\n(Activity & Noise)", fillcolor="#fef08a"];
+
+    ecg -> framing -> est;
+
+    subgraph cluster_classical {
+        label = "Classical DSP Baselines";
+        style = dashed;
+        color = "#94a3b8";
+        bw [label="Butterworth IIR\n(0.5-40 Hz)", fillcolor="#fed7aa"];
+        wav [label="Wavelet DB6\n(Soft Threshold)", fillcolor="#a7f3d0"];
+        fft [label="Adaptive FFT\n(Hard Zero Mask)", fillcolor="#c7d2fe"];
+    }
+
+    subgraph cluster_quantum {
+        label = "Quantum DSP Pipeline";
+        style = dashed;
+        color = "#06b6d4";
+        sp [label="State Preparation\n|psi> = sum x_i |i>", fillcolor="#cffafe"];
+        qft [label="QFT Gate\nO(log^2 M)", fillcolor="#cffafe"];
+        orc [label="Phase Oracle\nU_K: (-1) for Passband", fillcolor="#a5f3fc"];
+        grover [label="Grover Diffusion\nr=2 Iterations", fillcolor="#a5f3fc"];
+        iqft [label="IQFT Gate\nO(log^2 M)", fillcolor="#cffafe"];
+        rec [label="State Readout & Scaling", fillcolor="#cffafe"];
+
+        sp -> qft -> orc -> grover -> iqft -> rec;
+    }
+
+    est -> bw;
+    est -> wav;
+    est -> fft;
+    est -> sp;
+
+    synth [label="Overlap-Add Synthesis", fillcolor="#e2e8f0"];
+    eval [label="Morphology & Quality Metrics\n(SNR, PRD, R-Peak F1)", fillcolor="#d9f99d"];
+
+    bw -> synth;
+    wav -> synth;
+    fft -> synth;
+    rec -> synth;
+    synth -> eval;
+}

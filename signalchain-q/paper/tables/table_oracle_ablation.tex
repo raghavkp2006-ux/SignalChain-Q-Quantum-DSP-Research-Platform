@@ -1,0 +1,14 @@
+\begin{table}[t]
+\centering
+\caption{Ablation C: Phase Oracle Structural Comparison ($O_1$ Diagonal vs $O_2$ Range Comparator)}
+\label{tab:ablation_oracle}
+\begin{tabular}{ccccccc}
+\hline
+\textbf{$M$} & \textbf{$n$} & \textbf{$O_1 \equiv O_2$} & \textbf{$O_1$ Depth} & \textbf{$O_2$ Depth} & \textbf{$O_1$ Transpile} & \textbf{$O_2$ Transpile} \\
+\hline
+16 & 4 & Verified & 1 & 32 & 6.91 ms & 4.43 ms \\
+32 & 5 & Verified & 1 & 64 & 6.36 ms & 116.02 ms \\
+64 & 6 & Verified & 1 & 128 & 4.88 ms & 4.43 ms \\
+\hline
+\end{tabular}
+\end{table}

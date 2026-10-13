@@ -1,0 +1,42 @@
+experiment:
+  name: ecg_frozen_v1
+  seed: 1448
+  created_timestamp: '20261013_202654'
+ecg:
+  sampling_rate: 360.0
+  channel_index: 0
+adaptive_filter:
+  f_high_min: 30.0
+  f_high_max: 45.0
+  f_low_hz: 0.5
+quantum:
+  segment_size: 64
+  hop_length: 32
+  grover_iterations: 2
+  oracle: diagonal_reference
+  simulator: aer_statevector
+  transpile_optimization_level: 3
+metrics_summary:
+  median_snr_improvement_db: 0.2372
+  median_r_peak_f1: 1.0
+  median_prd_percent: 38.2257
+  median_rmse: 0.146344
+  circuit_depth: 7
+  cx_count: 0
+  best_classical_r_peak_f1: 1.0
+selection:
+  source: validation
+  split: validation
+  records:
+  - '101'
+  - '103'
+  - '106'
+  - '117'
+  - '201'
+  - '202'
+  - '207'
+  - '220'
+  frozen: true
+  test_set_used_for_selection: false
+  notes: Selected via constrained morphology threshold + tie-breaking order.
+config_hash: aa9704fa1f82e95d089033d013ecdbf4a135722cd21ed5233ff5e6efbe53b1eb

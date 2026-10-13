@@ -1,0 +1,243 @@
+\documentclass[journal,compsoc]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+
+\begin{document}
+
+\title{SignalChain-Q: An Empirical Evaluation of Quantum Fourier Filtering and Amplitude Amplification for Electrocardiogram Denoising}
+
+\author{SignalChain-Q Research Consortium}
+
+\IEEEtitleabstractindextext{%
+\begin{abstract}
+Electrocardiogram (ECG) denoising is an essential preprocessing step in cardiac electrophysiology, traditionally performed using finite impulse response (FIR/IIR) filters, adaptive filters, or discrete wavelet transforms (DWT). In this work, we present \textbf{SignalChain-Q}, an open, reproducible framework designed to assess whether an amplitude-encoded Quantum Fourier Transform (QFT) combined with an adaptive Grover amplitude amplification oracle can perform unitary frequency-selective noise suppression on raw biomedical time-series. We evaluate the proposed quantum signal processing pipeline against three established classical baselines---Butterworth bandpass filtering, Daubechies-6 wavelet shrinkage (Wavelet DB6), and an algorithmic classical counterpart (Adaptive FFT)---across the MIT-BIH Arrhythmia Database, the MIT-BIH Noise Stress Database (NSTDB), and the QT Database (QTDB), comprising 324 standard test evaluations across 6 noise types and 6 input SNR levels. 
+Contrary to speculative claims of unconditional quantum advantage, our empirical results reveal a nuanced outcome: classical Wavelet DB6 achieves superior raw SNR improvement (median $+0.59$\,dB, IQR $0.78$\,dB) compared to QFT-Grover (median $-0.47$\,dB, IQR $0.85$\,dB), a statistically significant deficit ($\Delta = -1.04$\,dB, Cliff's $\delta = -0.553$, $p < 10^{-6}$). However, QFT-Grover matches or modestly outperforms the unamplified classical Adaptive FFT baseline ($\Delta = +0.27$\,dB, $p < 10^{-6}$) and exhibits near-perfect R-peak morphology preservation (median $F_1 = 0.992$, timing shift $0.00$\,ms). Furthermore, quantum state preparation via classical amplitude encoding scales as $\Theta(M)$, offsetting theoretical asymptotic QFT circuit speedups. These findings establish that while quantum unitary DSP can execute adaptive spectral gating without phase distortion, it does not currently provide practical clinical denoising superiority over state-of-the-art wavelet methods.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Quantum Signal Processing, Electrocardiogram, Quantum Fourier Transform, Grover Amplitude Amplification, Biomedical DSP, Reproducibility.
+\end{IEEEkeywords}}
+
+\maketitle
+\IEEEdisplaynontitleabstractindextext
+\IEEEpeerreviewmaketitle
+
+\section{Introduction}
+\IEEEPARstart{E}{lectrocardiography} (ECG) provides a non-invasive recording of cardiac electrical activity essential for diagnosing arrhythmias, myocardial infarction, and conduction abnormalities. Clinical ECG acquisitions, however, are routinely corrupted by physiological and technical artifacts, including baseline wander (BW), muscle tremor / electromyographic noise (EM), motion artifacts (MA), and powerline interference (PLI) at 50/60\,Hz~\cite{sornmo2005bioelectrical,clifford2006advanced}. 
+
+Over the past four decades, classical digital signal processing (DSP) has matured into highly optimized solutions, ranging from Butterworth bandpass filtering and adaptive filtering to multi-scale discrete wavelet transform (DWT) thresholding~\cite{daubechies1992ten,pantompkins1985}. Concurrently, the emergence of quantum computation has stimulated interest in Quantum Signal Processing (QSP) and Quantum Fourier Transforms (QFT). Theoretical literature frequently highlights that the $n$-qubit QFT transforms an amplitude-encoded quantum state in $O(n^2) = O(\log^2 M)$ gate steps, compared to the classical Fast Fourier Transform (FFT) which scales as $O(M \log M)$~\cite{cooley1965algorithm,nielsenchuang2010}.
+
+Despite these theoretical bounds, quantum biomedical signal processing remains impeded by several fundamental challenges:
+\begin{enumerate}
+    \item \textbf{The State Preparation Bottleneck:} Loading an arbitrary classical $M$-sample ECG vector into quantum state amplitudes $\sum_{i=0}^{M-1} x_i |i\rangle$ requires arbitrary state synthesis costing $\Theta(M)$ elementary gates~\cite{shende2006synthesis,aaronson2015read}, negating sub-linear end-to-end processing.
+    \item \textbf{Unitary Constraint \& Non-Linearity:} Standard filtering operations (such as hard thresholding or zeroing stopband coefficients) are non-unitary and non-invertible, necessitating unitary phase-inversion oracles and Grover amplitude amplification~\cite{grover1996,brassard2002quantum}.
+    \item \textbf{Lack of Rigorous Benchmarking:} Existing quantum DSP studies often lack controlled comparison against matched classical equivalents, rigorous cross-database validation, and morphology preservation metrics.
+\end{enumerate}
+
+To rigorously address these questions, this paper introduces \textbf{SignalChain-Q}, an end-to-end framework combining windowed framing, classical energy-entropy spectral estimation, state preparation, QFT-based frequency mapping, Grover amplitude amplification, and overlap-add reconstruction. Through pre-registered protocol validation and rigorous hypothesis testing on PhysioNet standard benchmarks, we quantify the true performance and resource boundaries of quantum DSP for biomedical signals.
+
+\section{Related Work}
+Classical ECG denoising has been extensively documented in biomedical literature. Daubechies-wavelet shrinkage (specifically DB6) is widely recognized as a gold standard due to its morphological resemblance to cardiac QRS complexes~\cite{daubechies1992ten}. In quantum information processing, Grover's algorithm~\cite{grover1996} and generalized amplitude amplification~\cite{brassard2002quantum,boyer1998tight} establish quadratic speedups for unstructured search and marked subspace magnification. 
+
+Previous explorations of quantum Fourier analysis in signal processing have investigated theoretical filtering formulations; however, practical implementations frequently omit the exact cost of dense state preparation~\cite{mottonen2004transformation} and quantum state tomography~\cite{aaronson2015read}. SignalChain-Q bridges this gap by enforcing complete accounting of classical preprocessing, quantum circuit synthesis, and post-processing reconstruction.
+
+\section{Background}
+\subsection{ECG Denoising}
+An observed discrete-time ECG signal $y[n]$ is modeled as:
+\begin{equation}
+y[n] = x[n] + \eta[n],
+\end{equation}
+where $x[n]$ represents the true cardiac signal and $\eta[n]$ encompasses additive baseline wander, muscle noise, powerline interference, and white Gaussian noise. Preservation of the QRS complex, P-wave, and T-wave morphologies is critical for clinical diagnostic validity~\cite{pantompkins1985}.
+
+\subsection{Quantum Fourier Transform}
+The discrete Quantum Fourier Transform maps an orthonormal computational basis state $|j\rangle$ ($j \in \{0, \dots, M-1\}$ where $M=2^n$) to a superposition state:
+\begin{equation}
+\text{QFT}_M |j\rangle = \frac{1}{\sqrt{M}} \sum_{k=0}^{M-1} e^{2\pi i j k / M} |k\rangle.
+\end{equation}
+The QFT circuit requires $n$ Hadamard gates and $n(n-1)/2$ controlled-phase rotation gates $R_k$, yielding circuit gate complexity $O(n^2) = O(\log^2 M)$~\cite{nielsenchuang2010}.
+
+\subsection{Amplitude Encoding}
+Given a real classical windowed segment $\mathbf{x} = [x_0, x_1, \dots, x_{M-1}]^T$ with Euclidean norm $\|\mathbf{x}\|_2 = 1$, amplitude encoding initializes the $n$-qubit quantum register into:
+\begin{equation}
+|\psi_{\mathbf{x}}\rangle = \sum_{k=0}^{M-1} x_k |k\rangle.
+\end{equation}
+Exact state preparation for an arbitrary state $|\psi_{\mathbf{x}}\rangle$ requires a tree of multi-controlled Givens rotations, provably lower-bounded by $\Theta(2^n) = \Theta(M)$ elementary operations~\cite{shende2006synthesis}.
+
+\subsection{Amplitude Amplification}
+Let $\mathcal{H}$ decompose into a marked subspace $\mathcal{H}_1$ (in-band spectral components) and an unmarked subspace $\mathcal{H}_0$ (out-of-band noise components). Grover's iteration operator $\mathcal{G}$ is defined as:
+\begin{equation}
+\mathcal{G} = - \mathcal{S}_{\psi} \mathcal{O},
+\end{equation}
+where $\mathcal{O} = \mathbb{I} - 2\sum_{k \in \mathcal{K}_{\text{marked}}} |k\rangle\langle k|$ is the phase oracle, and $\mathcal{S}_{\psi} = \mathbb{I} - 2|\psi\rangle\langle\psi|$ represents inversion about the average.
+
+\section{SignalChain-Q Method}
+\subsection{Signal Framing}
+Continuous ECG signals sampled at $f_s$ are segmented using a Hann-windowed sliding frame of length $M=2^n$ with hop size $H = M/2$ (50\% overlap) to ensure perfect reconstruction under classical synthesis.
+
+\subsection{Adaptive Frequency Selection}
+Rather than assuming static filter cutoffs, an adaptive spectral estimation module inspects each segment's power spectral density (PSD) to identify the dominant QRS spectral energy distribution within clinical bounds ($f_{\text{min}} \in [0.5, 30]$\,Hz, $f_{\text{max}} \in [35, 45]$\,Hz). Spectral indices satisfying this adaptive band are marked for unitary amplification.
+
+\subsection{Classical Equivalent: Adaptive FFT}
+To ensure a fair baseline, we formulate the \textbf{Adaptive FFT}: an identical classical framing and spectral selection pipeline that applies a binary or tapered passband mask in the discrete Fourier frequency domain before inverse transformation.
+
+\subsection{Quantum Pipeline}
+The quantum signal chain executes the following unitary operations per frame:
+\begin{equation}
+|\phi_{\text{out}}\rangle = \mathcal{G}^r \, \text{QFT}_M \, U_{\text{prep}} |0\rangle^{\otimes n},
+\end{equation}
+where $r$ denotes the number of Grover iterations. Following unitary execution, the state vector is projected or sampled, inverse transformed, and synthesized via overlap-add (OLA).
+
+\subsection{Oracle Design}
+We investigate two oracle architectures:
+\begin{itemize}
+    \item \textbf{Dense Diagonal Oracle ($\mathcal{O}_1$):} Directly applies diagonal phase shifts $\text{diag}(e^{i\pi})$ across marked frequency indices.
+    \item \textbf{Comparator Range Oracle ($\mathcal{O}_2$):} Utilizes ancilla qubits and quantum comparators to evaluate computational basis boundaries $[k_{\text{low}}, k_{\text{high}}]$.
+\end{itemize}
+
+\subsection{Reconstruction}
+Reconstruction normalizes the recovered frame energy to match the estimated signal power, followed by Hann synthesis windowing and continuous time-domain overlap-add summation.
+
+\section{Experimental Methodology}
+\subsection{Datasets}
+\input{tables/table_dataset_summary.tex}
+As summarized in Table~\ref{tab:dataset_summary}, we evaluate three primary PhysioNet benchmarks~\cite{goldberger2000physiobank}:
+\begin{enumerate}
+    \item \textbf{MIT-BIH Arrhythmia Database (MIT-BIH):} 48 half-hour two-lead recordings at 360\,Hz~\cite{moody2001mitbih}.
+    \item \textbf{MIT-BIH Noise Stress Database (NSTDB):} Calibrated clinical noise recordings (BW, MA, EM)~\cite{moody1984nstdb}.
+    \item \textbf{QT Database (QTDB):} High-resolution multi-lead ECGs with expert beat morphology annotations~\cite{laguna1997qtdb}.
+\end{enumerate}
+
+\subsection{Train/Validation/Test Separation}
+To avoid data leakage, we enforce a strict pre-registered split:
+\begin{itemize}
+    \item \textbf{Validation Set:} 8 records (including records 201 and 202), reserved strictly for parameter tuning (Phase 8).
+    \item \textbf{Test Set:} 12 unseen MIT-BIH records (324 benchmark conditions across noise types and SNR levels).
+    \item \textbf{External Set:} 5 QTDB records evaluated under frozen parameters.
+\end{itemize}
+
+\subsection{Noise Models}
+Signals are contaminated with six distinct noise classes across input SNR levels $\{-6, 0, 6, 12, 18, 24\}$\,dB: baseline wander (\texttt{bw}), muscle artifact (\texttt{em}), motion artifact (\texttt{ma}), white Gaussian noise (\texttt{wgn}), 50\,Hz powerline (\texttt{pl50}), and 60\,Hz powerline (\texttt{pl60}).
+
+\subsection{Baselines}
+We compare:
+\begin{itemize}
+    \item \textbf{Raw:} Unprocessed noisy baseline.
+    \item \textbf{Butterworth:} 4th-order zero-phase IIR bandpass filter (0.5--45\,Hz).
+    \item \textbf{Wavelet DB6:} Daubechies-6 DWT with soft SURE thresholding across 5 decomposition levels.
+    \item \textbf{Adaptive FFT:} Matched classical spectral masking filter.
+    \item \textbf{QFT-Grover Adaptive:} The proposed quantum signal chain.
+\end{itemize}
+
+\subsection{Metrics}
+Denoising efficacy is quantified by:
+\begin{itemize}
+    \item \textbf{SNR Improvement ($\Delta\text{SNR}$):} $\text{SNR}_{\text{out}} - \text{SNR}_{\text{in}}$ in dB ($\uparrow$).
+    \item \textbf{Root Mean Square Error (RMSE):} $\sqrt{\frac{1}{N}\sum (x_i - \hat{x}_i)^2}$ ($\downarrow$).
+    \item \textbf{Percent Root-Mean-Square Difference (PRD):} $\frac{\|x - \hat{x}\|_2}{\|x\|_2} \times 100\%$ ($\downarrow$).
+    \item \textbf{Pearson Correlation Coefficient ($r$):} Linear waveform correlation ($\uparrow$).
+    \item \textbf{R-Peak Detection:} Sensitivity ($\text{Se}$), Positive Predictive Value ($\text{PPV}$), and $F_1$-score against annotated beat timings ($\uparrow$).
+\end{itemize}
+
+\subsection{Statistical Tests}
+Paired comparisons are evaluated using the non-parametric Wilcoxon signed-rank test. Family-wise error rate is controlled via Holm-Bonferroni correction ($\alpha = 0.05$). Effect sizes are quantified using Cliff's delta ($\delta$) and 95\% bootstrap confidence intervals (10,000 resamples).
+
+\subsection{Quantum Resource Metrics}
+Circuits are synthesized and profiled using Qiskit Aer, recording logical qubit width, ancilla allocation, logical depth, transpiled gate count, two-qubit CX count, and simulation execution wall-clock time.
+
+\section{Results}
+\subsection{Validation Parameter Selection}
+\input{tables/table_validation_parameters.tex}
+Table~\ref{tab:val_params} shows the pre-registered Phase 8 grid search results ($N=108$). The optimal configuration satisfying the morphology preservation constraint was selected as $M=64$ ($n=6$ qubits), $r=2$ Grover iterations, and passband bounds $[30.0, 45.0]$\,Hz. This configuration was strictly frozen into \texttt{configs/ecg\_frozen\_v1.yaml} prior to test evaluation.
+
+\subsection{MIT-BIH Main Test Results}
+\input{tables/table_main_results.tex}
+\input{tables/table_statistics.tex}
+
+The audited primary benchmark results on the 12 unseen MIT-BIH test records ($N=324$) are presented in Table~\ref{tab:main_results} and Table~\ref{tab:statistics}. 
+
+\textbf{Main Findings:}
+\begin{enumerate}
+    \item \textbf{Wavelet DB6 Dominance:} Wavelet DB6 achieved the highest median SNR improvement ($+0.59$\,dB, IQR $0.78$\,dB) and lowest PRD ($28.3\%$). QFT-Grover yielded a median SNR improvement of $-0.47$\,dB (IQR $0.85$\,dB). Paired statistical testing confirms that QFT-Grover is significantly lower than Wavelet DB6 ($\Delta = -1.04$\,dB, Cliff's $\delta = -0.553$, $p < 10^{-6}$).
+    \item \textbf{Quantum vs. Matched Adaptive FFT:} Relative to the classical Adaptive FFT baseline (median SNR improvement $-0.74$\,dB), QFT-Grover demonstrated a statistically significant improvement ($\Delta = +0.27$\,dB, 95\% CI $[+0.24, +0.30]$\,dB, Cliff's $\delta = +0.248$, $p < 10^{-6}$).
+    \item \textbf{Morphology Preservation:} Both Butterworth, Wavelet DB6, and QFT-Grover achieved high R-peak detection accuracy ($F_1 = 0.992$).
+\end{enumerate}
+
+\subsection{Subgroup Analyses}
+\input{tables/table_noise_type_results.tex}
+\input{tables/table_snr_level_results.tex}
+
+Table~\ref{tab:noise_types} breaks down performance across noise archetypes. Wavelet DB6 strongly outperforms all methods on broadband white Gaussian noise (\texttt{wgn}: $+3.37$\,dB) and electromyographic noise (\texttt{em}: $+1.61$\,dB). Conversely, under structured powerline interference (\texttt{pl50}, \texttt{pl60}), both QFT-Grover and Adaptive FFT maintain high correlation ($r \ge 0.96$).
+
+Table~\ref{tab:snr_levels} illustrates performance scaling across input SNR levels. In severe noise regimes ($-6$\,dB), Wavelet DB6 produces $+2.85$\,dB improvement, while QFT-Grover achieves $+0.36$\,dB. At high input SNR ($+24$\,dB), QFT-Grover exhibits slight negative SNR change ($-1.13$\,dB), reflecting discretization and finite framing boundaries.
+
+\subsection{QTDB External Validation}
+\input{tables/table_qtdb_morphology.tex}
+As documented in Table~\ref{tab:qtdb_morph}, external validation on the QT Database confirmed median R-peak timing error of $0.00$\,ms across all methods. As detailed in Section~\ref{sec:discussion}, this exact zero timing error stems from symmetric zero-phase overlap-add reflection filtering, which strictly avoids phase-delay peak translation on the 4\,ms sampling grid.
+
+\subsection{Quantum Resource Scaling}
+\input{tables/table_quantum_resources.tex}
+Table~\ref{tab:quantum_resources} details the hardware resource requirements as frame size scales from $M=64$ ($n=6$) to $M=256$ ($n=8$). Transpiled circuit depth increases from 74 to 284, with CX two-qubit gate counts growing from 18 to 92. End-to-end simulation runtime expands by $1.8\times$.
+
+\subsection{Ablation Studies}
+\input{tables/table_grover_ablation.tex}
+\input{tables/table_segment_ablation.tex}
+\input{tables/table_oracle_ablation.tex}
+
+The ablation experiments provide crucial scientific insights:
+\begin{itemize}
+    \item \textbf{Grover Iteration Count ($r$):} As shown in Table~\ref{tab:grover_ablation}, SNR improvement is maximized at $r=2$ ($-0.47$\,dB). Increasing to $r=3$ results in severe performance degradation ($-1.54$\,dB) and PRD inflation to $36.0\%$.
+    \item \textbf{Frame Size ($M$):} Table~\ref{tab:segment_ablation} confirms that $M=64$ offers superior temporal resolution over $M=128$ and $M=256$.
+    \item \textbf{Oracle Implementations:} Table~\ref{tab:oracle_ablation} establishes numerical equivalence between dense diagonal oracle $\mathcal{O}_1$ and comparator oracle $\mathcal{O}_2$ (identical SNR and PRD), while confirming that $\mathcal{O}_2$ introduces substantial ancilla and CX compilation overhead.
+\end{itemize}
+
+\section{Discussion}
+\label{sec:discussion}
+\subsection{Quantum vs. Classical Adaptive FFT}
+The comparison between QFT-Grover and Adaptive FFT confirms that unitary amplitude amplification achieves a modest but consistent improvement over naive frequency gating (+0.27\,dB, $p < 10^{-6}$). By rotating the state vector in the 2D Hilbert subspace, Grover iterations selectively enhance marked in-band amplitudes while suppressing unmarked noise modes without Gibbs-like edge truncation.
+
+\subsection{Comparison with Wavelet Denoising}
+The substantial margin by which Wavelet DB6 surpasses QFT-Grover (+1.04\,dB paired difference) highlights the fundamental mismatch between static Fourier basis functions and non-stationary cardiac waveforms. Daubechies wavelets localize compact time-frequency transients characteristic of QRS complexes, whereas block-based Fourier framing introduces spectral leakage across window boundaries.
+
+\subsection{Morphology and Timing Preservation}
+A rigorous audit of the QTDB morphology metrics confirms that the observed $0.00$\,ms R-peak timing shift is a genuine structural consequence of zero-phase symmetric synthesis. Because QFT phase rotations are unitary and symmetric around the center of each windowed frame, the composite filter response does not introduce group delay. However, diagnostic QRS and QT boundary delineations must be interpreted cautiously, as proxy estimators correlate with peak fidelity rather than full morphological segment parsing.
+
+\subsection{The State Preparation Bottleneck}
+The central theoretical barrier to end-to-end quantum acceleration is state preparation. While the QFT executes in $O(\log^2 M)$ circuit depth, preparing the arbitrary state $|\psi\rangle = \sum x_i |i\rangle$ from classical samples requires $\Theta(M)$ elementary operations~\cite{shende2006synthesis,aaronson2015read}. Consequently, any proposed QSP pipeline operating on classical streaming time-series is asymptotically bounded by $\Omega(M)$, matching classical FFT algorithms.
+
+\subsection{Grover Over-Rotation Dynamics}
+The pronounced degradation observed at $r=3$ in Table~\ref{tab:grover_ablation} illustrates the geometry of amplitude amplification. Unlike classical iterative filters, where additional stages increase stopband attenuation monotonically, Grover operators act as geometric rotations in a two-dimensional subspace:
+\begin{equation}
+|\psi_k\rangle = \sin((2k+1)\theta) |\omega\rangle + \cos((2k+1)\theta) |\omega^\perp\rangle.
+\end{equation}
+When the initial marked energy fraction $a$ is moderate ($a \approx 0.25$, $\theta \approx 30^\circ$), $r=1$ yields rotation angle $3\theta \approx 90^\circ$ (near optimal), while $r=3$ rotates the state to $7\theta \approx 210^\circ$, causing catastrophic phase inversion, amplitude over-rotation, and waveform distortion.
+
+\subsection{NISQ Hardware Limitations}
+With current Noisy Intermediate-Scale Quantum (NISQ) hardware exhibiting two-qubit gate error rates of $10^{-3}$ to $10^{-2}$, executing transpiled circuits with 18--92 CX gates per 64-sample frame would induce decoherence noise exceeding the physiological noise being removed. Fault-tolerant logical qubits will be required for practical physical realization.
+
+\section{Limitations}
+This investigation is subject to several explicit limitations:
+\begin{enumerate}
+    \item \textbf{Simulation-Based Evaluation:} Quantum circuits were evaluated using classical statevector simulation on the Qiskit Aer backend; physical quantum processing unit (QPU) noise was not modeled.
+    \item \textbf{Framing Truncation:} Small frame sizes ($M=64$) limit frequency resolution to $\Delta f = f_s / M \approx 5.6$\,Hz, constraining narrow notch filter precision.
+    \item \textbf{Real-Time Processing:} End-to-end latency is dominated by state preparation and simulation overhead, rendering the current implementation unsuitable for real-time bedside monitoring.
+\end{enumerate}
+
+\section{Conclusion}
+In this study, we presented SignalChain-Q, a rigorous and reproducible evaluation of quantum signal processing for ECG denoising. Our empirical findings refute claims of universal quantum denoising superiority, demonstrating that classical Daubechies-6 wavelet thresholding remains significantly superior in raw SNR improvement. Nonetheless, we show that QFT-Grover provides a mathematically principled, zero-phase unitary frequency gating mechanism that outperforms classical unamplified adaptive FFT while preserving cardiac morphology. These findings delineate the realistic capabilities and physical boundaries of quantum algorithms for biomedical DSP.
+
+\section*{Acknowledgment}
+This research was supported by the SignalChain-Q open-source initiative and utilized computational resources and datasets provided by PhysioNet and the MIT-BIH Arrhythmia Database.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

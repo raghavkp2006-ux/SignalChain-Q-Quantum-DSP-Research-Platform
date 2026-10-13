@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{External Morphology Preservation on QT Database ($f_s = 250.0$ Hz, 10 records). Discrete R-peak timing resolution bounded by $\pm 2.0$ ms discrete sampling grid.}
+\label{tab:qtdb_morphology}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Method} & \textbf{Median $F_1$} & \textbf{R-Peak Timing Err.} & \textbf{PRD (\%)} & \textbf{Pearson $r$} \\
+\hline
+Butterworth Bandpass & 1.0000 & 0.00 ms & 46.36\% & 0.9864 \\
+Adaptive FFT & 1.0000 & 0.00 ms & 38.40\% & 0.9699 \\
+QFT-Grover Adaptive & 1.0000 & 0.00 ms & 6.05\% & 0.9987 \\
+Raw (Reference) & 1.0000 & 0.00 ms & 0.00\% & 1.0000 \\
+Wavelet DB6 & 1.0000 & 0.00 ms & 0.00\% & 1.0000 \\
+\hline
+\end{tabular}
+\end{table}

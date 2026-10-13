@@ -1,0 +1,23 @@
+graph TD
+    subgraph Signal Processing Flow
+        A[ECG Signal Input] --> B[Framing: Hann Overlap-Add]
+        B --> C[Adaptive Spectral Estimator]
+        C --> D{Processing Branch}
+
+        D -->|Baseline 1| E[Butterworth Bandpass 0.5-40 Hz]
+        D -->|Baseline 2| F[Wavelet DB6 Multiresolution]
+        D -->|Baseline 3| G[Adaptive FFT Frequency Mask]
+
+        D -->|Quantum Branch| H[Amplitude Encoding: State Preparation]
+        H --> I[Quantum Fourier Transform: QFT]
+        I --> J[Adaptive Phase Oracle: O1 / O2]
+        J --> K[Grover Diffusion: Amplitude Amplification r=2]
+        K --> L[Inverse QFT: IQFT]
+        L --> M[Statevector Readout / Rescaling]
+
+        E --> N[Signal Synthesis & Overlap-Add]
+        F --> N
+        G --> N
+        M --> N
+        N --> O[Clinical Evaluation: SNR, PRD, R-Peak F1, QT Timing]
+    end

@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\caption{Validation Parameter Grid Search and Selected Configuration}
+\label{tab:validation_grid}
+\begin{tabular}{lp{3.5cm}cc}
+\hline
+\textbf{Parameter} & \textbf{Grid Search Space} & \textbf{Tested} & \textbf{Selected (Frozen)} \\
+\hline
+Lower Cutoff ($f_{\text{low}}$) & Fixed & 1 & 0.5 Hz \\
+Min Upper Cutoff ($f_{\text{high,min}}$) & $[20.0, 25.0, 30.0]$ Hz & 3 & 30.0 Hz \\
+Max Upper Cutoff ($f_{\text{high,max}}$) & $[40.0, 45.0, 50.0]$ Hz & 3 & 45.0 Hz \\
+Segment Size ($M$) & $[64, 128, 256]$ samples & 3 & 64 samples ($n=6$) \\
+Grover Iterations ($r$) & $[0, 1, 2, 3]$ & 4 & 2 \\
+Total Valid Grid Points & $f_{\text{high,min}} < f_{\text{high,max}}$ & 108 & 1 (\texttt{cfg\_086}) \\
+Feasible Candidates & $F_1 \ge F_{1,\text{classical}} - 0.01$ & 46 & 1 (Max Median SNR) \\
+\hline
+\end{tabular}
+\end{table}

@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Ablation A: Grover Iteration Dynamics ($M=128$, Baseline Wander Noise at 6.0 dB SNR)}
+\label{tab:ablation_grover}
+\begin{tabular}{cccccccc}
+\hline
+\textbf{$r$} & \textbf{SNR Imp.} & \textbf{RMSE} & \textbf{PRD} & \textbf{$F_1$ Score} & \textbf{Log. Depth} & \textbf{CX} & \textbf{Sim Runtime} \\
+\hline
+0 & -12.00 dB & 0.445 & 178.1\% & 1.000 & 4 & 0 & 680.2 ms \\
+1 & -12.00 dB & 0.445 & 178.1\% & 1.000 & 5 & 0 & 1444.2 ms \\
+2 & +0.35 dB & 0.107 & 42.9\% & 1.000 & 7 & 0 & 2283.3 ms \\
+3 & -12.00 dB & 0.445 & 178.1\% & 1.000 & 9 & 0 & 2650.0 ms \\
+\hline
+\end{tabular}
+\end{table}

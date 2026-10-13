@@ -1,0 +1,14 @@
+\begin{table*}[t]
+\centering
+\caption{Paired Statistical Comparisons on MIT-BIH Test Split ($N=1,260$). Wilcoxon signed-rank test with Holm-Bonferroni family-wise error rate correction and 95\% bootstrap confidence intervals.}
+\label{tab:statistics}
+\begin{tabular}{lcccccl}
+\hline
+\textbf{Comparison} & \textbf{Med. Diff.} & \textbf{95\% Bootstrap CI} & \textbf{Cliff's $\delta$} & \textbf{Effect Size} & \textbf{$p_{\text{corr}}$} & \textbf{Statistical Conclusion} \\
+\hline
+QFT-Grover vs Adaptive FFT & +7.16 dB & [6.41, 9.91] & +0.363 & Moderate & $< 10^{-6}$ & QFT-Grover significantly higher \\
+QFT-Grover vs Butterworth Bandpass & +9.12 dB & [7.26, 11.33] & +0.447 & Moderate & $< 10^{-6}$ & QFT-Grover significantly higher \\
+QFT-Grover vs Wavelet DB6 & -4.06 dB & [-4.74, -3.33] & -0.553 & Large & $< 10^{-6}$ & Classical significantly higher \\
+\hline
+\end{tabular}
+\end{table*}
